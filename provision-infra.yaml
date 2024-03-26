@@ -1,0 +1,254 @@
+# Master template to create and deploy infra for Zomato Application
+
+name: Infra Provision
+
+trigger:
+- none
+
+pool: 'Private Pool Deployment'
+# pool:
+  vmImage: windows-latest
+
+# checkout Azure infrastructure template repositories 
+resources:
+  repositories:
+    - repository: till-azure-infra
+      type: git
+      name: Ecommece/zomato-azure-infra
+      ref: 'refs/heads/master'
+
+    # - repository: xxx-infra-templates-arm
+    #   type: git
+    #   name: ecmmerce/prmms-infra-templates-arm
+    #   ref: 'refs/heads/master'
+
+
+parameters:
+
+- name: environment
+  displayName: Target environment
+  type: string
+  default: 'd'
+  values:
+  - 'd'
+  - 't'
+  - 'a'
+  - 'p'
+
+
+- name: CreateKeyVault
+  displayName: Create KeyVault
+  type: boolean
+  default: false
+- name: CreatePleToKeyVault
+  displayName: Create Ple To KeyVault
+  type: boolean
+  default: false
+- name: CreateStorageAccount
+  displayName: Create Storage Account
+  type: boolean
+  default: false
+- name: GrantStorageAccess
+  displayName: Grant Storage Access to Block and ADF?
+  type: boolean
+  default: false
+- name: CreateBlobContainer
+  displayName: Create Blob Container
+  type: boolean
+  default: false
+- name: CreatePleToStorageBlob
+  displayName: Create Ple To Blob Storage
+  type: boolean
+  default: false
+- name: CreateFileShare
+  displayName: Create File Share
+  type: boolean
+  default: false
+- name: CreatePleToFileService
+  displayName: Create Ple To File Share
+  type: boolean
+  default: false
+- name: CreateRecoveryServiceVault
+  displayName: Create Recovery Services Vault
+  type: boolean
+  default: false
+- name: CreatePleToRecoveryVault
+  displayName: Create Ple To Recovery Vault
+  type: boolean
+  default: false
+- name: CreateLogAnalyticsWorkspace
+  displayName: Create Log Analytics Workspace
+  type: boolean
+  default: false
+- name: CreateWindowsVM
+  displayName: Create Windows VM
+  type: boolean
+  default: false 
+- name: RegisterWindowsVM
+  displayName: Register Windows VM in Environment
+  type: boolean
+  default: false 
+- name: RemoveWindowsEnvironmentAgent
+  displayName: Remove Windows VM from Environment
+  type: boolean
+  default: false
+- name: CreateDataDisksforVM
+  displayName: Create DataDisks for VM
+  type: boolean
+  default: false
+- name: InitializeDataDisks
+  displayName: Initialize DataDisks
+  type: boolean
+  default: false
+- name: ResetVMCreds
+  displayName: Reset VM Admin Credentials
+  type: boolean
+  default: false
+- name: VMPasswordasSecret
+  displayName: Store VM Password as Keyvault secret
+  type: boolean
+  default: false
+- name: VMAccessKeyVaultSecret
+  displayName: Give AppVM access to Keyvault secret
+  type: boolean
+  default: false  
+- name: KeyRotationKeyVault
+  displayName: Set the rotation policy for the keys within a keyvault
+  type: boolean
+  default: false  
+- name: CreateRSVBackupforVM
+  displayName: Create RSV Backup for VM
+  type: boolean
+  default: false
+- name: StopVM
+  displayName: Stop VM
+  type: boolean
+  default: false
+- name: StartVM
+  displayName: Start VM
+  type: boolean
+  default: false
+- name: RestartVM
+  displayName: Restart VM
+  type: boolean
+  default: false
+- name: DeleteVM
+  displayName: Delete VM
+  type: boolean
+  default: false 
+- name: RemoveResource
+  displayName: Remove a Resource
+  type: boolean
+  default: false 
+
+
+
+variables:
+  - group: ecomerce.VariableGroup.GlobalVars
+  - group: TeamVars.zomato
+  
+  - ${{ if eq(parameters.environment, 'd') }}:
+    - group: zomato.D.Vars
+  - ${{ if eq(parameters.environment, 't') }}:
+    - group: zomato.T.Vars
+  - ${{ if eq(parameters.environment, 'a') }}:
+    - group: zomato.A.Vars
+  - ${{ if eq(parameters.environment, 'p') }}:
+    - group: zomato.P.Vars
+  - template: /vars/zomato-${{ parameters.environment }}-vars.yml                 
+  - name: System.Debug
+    value: true
+
+
+extends:
+  template: ./flows/provision-infra.yml@zomato-azure-infra
+  parameters:
+
+    ## Create Resources
+    CreateKeyVault: ${{ parameters.CreateKeyVault }}
+    CreateStorageAccount: ${{ parameters.CreateStorageAccount }}
+    CreateBlobContainer: ${{ parameters.CreateBlobContainer }}
+    CreateFileShare: ${{ parameters.CreateFileShare }}
+    CreateRecoveryServiceVault: ${{ parameters.CreateRecoveryServiceVault }}
+    CreateLogAnalyticsWorkspace: ${{ parameters.CreateLogAnalyticsWorkspace }}
+    CreateWindowsVM: ${{ parameters.CreateWindowsVM }}
+    RegisterWindowsVM: ${{ parameters.RegisterWindowsVM }}
+    RemoveWindowsEnvironmentAgent: ${{ parameters.RemoveWindowsEnvironmentAgent }}
+    CreateDataDisksforVM: ${{ parameters.CreateDataDisksforVM }}
+    InitializeDataDisks: ${{ parameters.InitializeDataDisks }}
+    ResetVMCreds: ${{ parameters.ResetVMCreds }}
+    VMPasswordasSecret: ${{ parameters.VMPasswordasSecret }}
+    VMAccessKeyVaultSecret: ${{ parameters.VMAccessKeyVaultSecret }}
+    KeyRotationKeyVault: ${{ parameters.KeyRotationKeyVault }}
+    StopVM: ${{ parameters.StopVM }}
+    StartVM: ${{ parameters.StartVM }}
+    RestartVM: ${{ parameters.RestartVM }}
+    DeleteVM: ${{ parameters.DeleteVM }}
+    RemoveResource: ${{ parameters.RemoveResource }}
+    CreateRSVBackupforVM: ${{ parameters.CreateRSVBackupforVM }}
+    CreatePleToKeyVault: ${{ parameters.CreatePleToKeyVault }}
+    CreatePleToStorageBlob: ${{ parameters.CreatePleToStorageBlob }}
+    CreatePleToFileService: ${{ parameters.CreatePleToFileService }}
+    CreatePleToRecoveryVault: ${{ parameters.CreatePleToRecoveryVault }}
+    GrantStorageAccess: ${{ parameters.GrantStorageAccess }}
+
+    ## Basic parameters
+
+    SubscriptionId: ${{ variables.SubscriptionId }}
+    ServiceConnectionName: ${{ variables.ResourceGroupName }}
+    ServicePrincipalObjectID: ${{ variables.ServicePrincipalObjectID }}
+    ResourceGroupName: ${{variables.ResourceGroupName}}
+    DevOpsProjectName: ${{ variables.DevOpsProjectName }}
+    ResourceGroupLocation: ${{ variables.ResourceGroupLocation }}
+    ServiceShortName: ${{ variables.ServiceShortName }}
+    EnvironmentCode: ${{ variables.EnvironmentCode }}
+    GroupId: ${{ variables.GroupId }}
+    GroupName: ${{ variables.GroupName }}
+    VNetResourceGroupName: ${{ variables.VNetResourceGroupName }}
+    VirtualNetworkName: ${{ variables.VirtualNetworkName }}
+    PleSubnetName: ${{ variables.PleSubnetName }}
+    EnvironmentName: ${{ variables.EnvironmentName }}
+    PAT: $(PAT)
+
+    ## UAMI related parameters
+    UserAssignedManagedIdentityName: ${{ variables.UserAssignedManagedIdentityName }}
+    ADFManagedIdentity: ${{ variables.MoveITADFManagedIdentity }}
+
+
+    ## Key vault related parameters 
+    KeyVaultName: ${{ variables.KeyVaultName }}
+    Hsmdes1ObjectID: ${{ variables.Hsmdes1ObjectID }}
+    Hsmdes2ObjectID: ${{ variables.Hsmdes2ObjectID }}
+
+
+
+    ## Log Analytics Workspace related parameters 
+    LogAnalyticsWorkspaceName: ${{ variables.LogAnalyticsWorkspaceName }}
+
+
+    ## Storage account related parameters 
+    StorageAccountName: ${{ variables.StorageAccountName }}
+    FileServiceName : ${{ variables.FileServiceName }}
+    BlobContainerName: ${{ variables.BlobContainerName }}
+
+    
+
+    ## Recivery service vault related parameters 
+    RecoveryVaultName: ${{ variables.RecoveryVaultName }}
+
+
+    ## Parameters for App VM creation
+    VirtualMachineSize: ${{ variables.AppVMSize }}
+    AppVMLocalAdminGroupName: ${{ variables.AppVMLocalAdminGroupName }}
+    VMNameSuffix: ${{ variables.AppVMNameSuffix }}
+    AdminUsername: ${{ variables.AppVMAdminUsername }}
+    AdminPassword: $(AppVMAdminPassword)
+    EncryptionSize: ${{variables.WindowsVMEncryptionSize}}
+    OSDiskSizeGB: ${{variables.WindowsVMOsDiskSizeGB}}
+    AppVMSubnetName: ${{variables.AppVMSubnetName}}
+    WindowsVMEnvironmentAgentTag: ${{variables.AppVMEnvironmentAgentTag}}
+    VmDiskList: ['${{ variables.AppVmDiskList }}']
+
+    ## Remove a Resource
+
+    ResourceId: '/subscriptions/xxxxxxxxxxxxxx/resourceGroups/zomato-a-rg/providers/Microsoft.Compute/disks/datadisk01' #Id of the reource to be removed
